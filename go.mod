@@ -1,4 +1,4 @@
-module github.com/croatiangrn/twitter-scraper
+module github.com/croatiangrns/twitter-scraper
 
 go 1.20
 
