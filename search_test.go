@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	twitterscraper "github.com/n0madic/twitter-scraper"
+	twitterscraper "github.com/croatiangrn/twitter-scraper"
 )
 
 var searchScraper = twitterscraper.New()
