@@ -1,15 +1,26 @@
 package twitterscraper
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 )
 
 const bearerToken string = "AAAAAAAAAAAAAAAAAAAAAPYXBAAAAAAACLXUNDekMxqa8h%2F40K4moUkGsoc%3DTYfbDKbT3jJPCEVnMYqilB28NHfOPqkca3qaAxGfsyKCs0wRbw"
+
+func generateToken(size int) (string, error) {
+	data := make([]byte, size)
+	_, err := rand.Read(data)
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(data), nil
+}
 
 // RequestAPI get JSON from frontend API and decodes it
 func (s *Scraper) RequestAPI(req *http.Request, target interface{}) error {
@@ -36,8 +47,8 @@ func (s *Scraper) RequestAPI(req *http.Request, target interface{}) error {
 
 	for _, cookie := range s.client.Jar.Cookies(req.URL) {
 		if cookie.Name == "ct0" {
-			log.Println(cookie.Value)
-			req.Header.Set("X-CSRF-Token", cookie.Value)
+			tkn, _ := generateToken(64)
+			req.Header.Set("X-CSRF-Token", tkn)
 			break
 		}
 	}
