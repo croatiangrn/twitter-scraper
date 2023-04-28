@@ -2,7 +2,6 @@ package twitterscraper
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -131,8 +130,6 @@ func getTweetTimeline(ctx context.Context, query string, maxTweetsNbr int, fetch
 			if len(tweets) == 0 {
 				break
 			}
-
-			log.Printf("Number of tweets fetched per response: %d", len(tweets))
 
 			if strings.HasPrefix(next, "scroll:") {
 				continue

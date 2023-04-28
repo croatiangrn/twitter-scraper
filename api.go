@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,8 +21,6 @@ type ResponseAPIHeaders struct {
 
 // RequestAPI get JSON from frontend API and decodes it
 func (s *Scraper) RequestAPI(req *http.Request, target interface{}) (*ResponseAPIHeaders, error) {
-	log.Printf("URL that's triggered: %s", req.URL.String())
-
 	s.wg.Wait()
 	if s.delay > 0 {
 		defer func() {
@@ -78,8 +75,6 @@ func (s *Scraper) RequestAPI(req *http.Request, target interface{}) (*ResponseAP
 	requestAPIHeaders := ResponseAPIHeaders{}
 	for header, values := range resp.Header {
 		if _, ok := allowedHeaders[strings.ToLower(header)]; ok {
-			log.Printf("%s: %v\n", header, values)
-
 			switch strings.ToLower(header) {
 			case "x-rate-limit-limit":
 				if len(values) > 0 {
