@@ -154,6 +154,45 @@ func (s *Scraper) SetProxy(proxyAddr string) error {
 	return errors.New("only support http(s) or socks5 protocol")
 }
 
+// SetProxyWithTransport
+// set http proxy in the format `http://HOST:PORT`
+// set socket proxy in the format `socks5://HOST:PORT`
+func (s *Scraper) SetProxyWithTransport(proxyAddr string, transport *http.Transport) error {
+	if strings.HasPrefix(proxyAddr, "http") {
+		if _, err := url.Parse(proxyAddr); err != nil {
+			return err
+		}
+
+		s.client = &http.Client{
+			Transport: transport,
+		}
+		return nil
+	}
+	if strings.HasPrefix(proxyAddr, "socks5") {
+		baseDialer := &net.Dialer{
+			Timeout:   s.client.Timeout,
+			KeepAlive: s.client.Timeout,
+		}
+		socksHostPort := strings.ReplaceAll(proxyAddr, "socks5://", "")
+		dialSocksProxy, err := proxy.SOCKS5("tcp", socksHostPort, nil, baseDialer)
+		if err != nil {
+			return errors.New("error creating socks5 proxy :" + err.Error())
+		}
+		if contextDialer, ok := dialSocksProxy.(proxy.ContextDialer); ok {
+			dialContext := contextDialer.DialContext
+			s.client = &http.Client{
+				Transport: &http.Transport{
+					DialContext: dialContext,
+				},
+			}
+		} else {
+			return errors.New("failed type assertion to DialContext")
+		}
+		return nil
+	}
+	return errors.New("only support http(s) or socks5 protocol")
+}
+
 // Deprecated: SetProxy wrapper for default Scraper
 func SetProxy(proxy string) error {
 	return defaultScraper.SetProxy(proxy)
