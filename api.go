@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 )
@@ -54,6 +55,11 @@ func (s *Scraper) RequestAPI(req *http.Request, target interface{}) error {
 
 	if resp.Header.Get("X-Rate-Limit-Remaining") == "0" {
 		s.guestToken = ""
+	}
+
+	// Print all response headers
+	for header, values := range resp.Header {
+		log.Printf("%s: %v\n", header, values)
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
