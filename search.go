@@ -73,6 +73,52 @@ func (s *Scraper) getSearchTimeline(query string, maxNbr int, cursor string) (*t
 	return &timeline, nil
 }
 
+func (s *Scraper) getSearchTimelineWithResponseHeaders(query string, maxNbr int, cursor string) (*timeline, *ResponseAPIHeaders, error) {
+	if !s.isLogged {
+		return nil, nil, errors.New("scraper is not logged in for search")
+	}
+
+	if maxNbr > 50 {
+		maxNbr = 50
+	}
+
+	req, err := s.newRequest("GET", "https://twitter.com/i/api/2/search/adaptive.json")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	q := req.URL.Query()
+	q.Add("q", query)
+	q.Add("count", strconv.Itoa(maxNbr))
+	q.Add("query_source", "typed_query")
+	q.Add("pc", "1")
+	q.Add("requestContext", "launch")
+	q.Add("spelling_corrections", "1")
+	q.Add("include_ext_edit_control", "true")
+	if cursor != "" {
+		q.Add("cursor", cursor)
+	}
+	switch s.searchMode {
+	case SearchLatest:
+		q.Add("f", "live")
+	case SearchPhotos:
+		q.Add("result_filter", "image")
+	case SearchVideos:
+		q.Add("result_filter", "video")
+	case SearchUsers:
+		q.Add("result_filter", "user")
+	}
+
+	req.URL.RawQuery = q.Encode()
+
+	var timeline timeline
+	responseHeaders, reqApiErr := s.RequestAPI(req, &timeline)
+	if reqApiErr != nil {
+		return nil, nil, reqApiErr
+	}
+	return &timeline, responseHeaders, nil
+}
+
 // FetchSearchTweets gets tweets for a given search query, via the Twitter frontend API
 func (s *Scraper) FetchSearchTweets(query string, maxTweetsNbr int, cursor string) ([]*Tweet, string, error) {
 	timeline, err := s.getSearchTimeline(query, maxTweetsNbr, cursor)
@@ -81,6 +127,15 @@ func (s *Scraper) FetchSearchTweets(query string, maxTweetsNbr int, cursor strin
 	}
 	tweets, nextCursor := timeline.parseTweets()
 	return tweets, nextCursor, nil
+}
+
+func (s *Scraper) FetchSearchTweetsWithResponseHeaders(query string, maxTweetsNbr int, cursor string) ([]*Tweet, string, *ResponseAPIHeaders, error) {
+	timeline, responseHeaders, err := s.getSearchTimelineWithResponseHeaders(query, maxTweetsNbr, cursor)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	tweets, nextCursor := timeline.parseTweets()
+	return tweets, nextCursor, responseHeaders, nil
 }
 
 // FetchSearchProfiles gets users for a given search query, via the Twitter frontend API
