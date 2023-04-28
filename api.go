@@ -14,6 +14,8 @@ const bearerToken string = "AAAAAAAAAAAAAAAAAAAAAPYXBAAAAAAACLXUNDekMxqa8h%2F40K
 
 // RequestAPI get JSON from frontend API and decodes it
 func (s *Scraper) RequestAPI(req *http.Request, target interface{}) error {
+	log.Printf("URL that's triggered: %s", req.URL.String())
+
 	s.wg.Wait()
 	if s.delay > 0 {
 		defer func() {
