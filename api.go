@@ -3,17 +3,25 @@ package twitterscraper
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const bearerToken string = "AAAAAAAAAAAAAAAAAAAAAPYXBAAAAAAACLXUNDekMxqa8h%2F40K4moUkGsoc%3DTYfbDKbT3jJPCEVnMYqilB28NHfOPqkca3qaAxGfsyKCs0wRbw"
 
+type ResponseAPIHeaders struct {
+	XRateLimitReset     int64
+	XRateLimitLimit     int
+	XRateLimitRemaining int
+}
+
 // RequestAPI get JSON from frontend API and decodes it
-func (s *Scraper) RequestAPI(req *http.Request, target interface{}) error {
+func (s *Scraper) RequestAPI(req *http.Request, target interface{}) (*ResponseAPIHeaders, error) {
 	log.Printf("URL that's triggered: %s", req.URL.String())
 
 	s.wg.Wait()
@@ -30,7 +38,7 @@ func (s *Scraper) RequestAPI(req *http.Request, target interface{}) error {
 	if !s.IsGuestToken() || s.guestCreatedAt.Before(time.Now().Add(-time.Hour*3)) {
 		err := s.GetGuestToken()
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -46,14 +54,14 @@ func (s *Scraper) RequestAPI(req *http.Request, target interface{}) error {
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	// private profiles return forbidden, but also data
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusForbidden {
 		content, _ := ioutil.ReadAll(resp.Body)
-		return fmt.Errorf("response status %s: %s", resp.Status, content)
+		return nil, fmt.Errorf("response status %s: %s", resp.Status, content)
 	}
 
 	if resp.Header.Get("X-Rate-Limit-Remaining") == "0" {
@@ -67,26 +75,46 @@ func (s *Scraper) RequestAPI(req *http.Request, target interface{}) error {
 		"x-rate-limit-remaining": {},
 	}
 
-	log.Println("")
-	log.Println("")
-	log.Println("")
+	requestAPIHeaders := ResponseAPIHeaders{}
 	for header, values := range resp.Header {
 		if _, ok := allowedHeaders[strings.ToLower(header)]; ok {
 			log.Printf("%s: %v\n", header, values)
+
+			switch strings.ToLower(header) {
+			case "x-rate-limit-limit":
+				if len(values) > 0 {
+					limit, limitErr := strconv.Atoi(values[0])
+					if limitErr != nil {
+						return nil, err
+					}
+					requestAPIHeaders.XRateLimitLimit = limit
+				}
+			case "x-rate-limit-reset":
+				if len(values) > 0 {
+					limit, limitErr := strconv.ParseInt(values[0], 10, 64)
+					if limitErr != nil {
+						return nil, err
+					}
+					requestAPIHeaders.XRateLimitReset = limit
+				}
+			case "x-rate-limit-remaining":
+				if len(values) > 0 {
+					limit, limitErr := strconv.Atoi(values[0])
+					if limitErr != nil {
+						return nil, err
+					}
+					requestAPIHeaders.XRateLimitRemaining = limit
+				}
+			}
 		}
 	}
 
-	log.Println("")
-	log.Println("")
-	log.Println("")
-
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	// fmt.Println(string(b))
 
-	return json.Unmarshal(b, target)
+	return &requestAPIHeaders, json.Unmarshal(b, target)
 }
 
 // GetGuestToken from Twitter API

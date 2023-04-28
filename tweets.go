@@ -41,13 +41,46 @@ func (s *Scraper) FetchTweets(user string, maxTweetsNbr int, cursor string) ([]*
 	req.URL.RawQuery = q.Encode()
 
 	var timeline timeline
-	err = s.RequestAPI(req, &timeline)
+	_, err = s.RequestAPI(req, &timeline)
 	if err != nil {
 		return nil, "", err
 	}
 
 	tweets, nextCursor := timeline.parseTweets()
 	return tweets, nextCursor, nil
+}
+
+func (s *Scraper) FetchTweetsWithResponseHeaders(user string, maxTweetsNbr int, cursor string) ([]*Tweet, string, *ResponseAPIHeaders, error) {
+	if maxTweetsNbr > 200 {
+		maxTweetsNbr = 200
+	}
+
+	userID, err := s.GetUserIDByScreenName(user)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	req, err := s.newRequest("GET", "https://api.twitter.com/2/timeline/profile/"+userID+".json")
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	q := req.URL.Query()
+	q.Add("count", strconv.Itoa(maxTweetsNbr))
+	q.Add("userId", userID)
+	if cursor != "" {
+		q.Add("cursor", cursor)
+	}
+	req.URL.RawQuery = q.Encode()
+
+	var timeline timeline
+	responseHeaders, responseHeadersErr := s.RequestAPI(req, &timeline)
+	if responseHeadersErr != nil {
+		return nil, "", nil, responseHeadersErr
+	}
+
+	tweets, nextCursor := timeline.parseTweets()
+	return tweets, nextCursor, responseHeaders, nil
 }
 
 // GetTweet get a single tweet by ID.
@@ -58,7 +91,7 @@ func (s *Scraper) GetTweet(id string) (*Tweet, error) {
 	}
 
 	var timeline timeline
-	err = s.RequestAPI(req, &timeline)
+	_, err = s.RequestAPI(req, &timeline)
 	if err != nil {
 		return nil, err
 	}

@@ -66,7 +66,7 @@ func (s *Scraper) getSearchTimeline(query string, maxNbr int, cursor string) (*t
 	req.URL.RawQuery = q.Encode()
 
 	var timeline timeline
-	err = s.RequestAPI(req, &timeline)
+	_, err = s.RequestAPI(req, &timeline)
 	if err != nil {
 		return nil, err
 	}

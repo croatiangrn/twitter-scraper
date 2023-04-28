@@ -18,7 +18,7 @@ func (s *Scraper) GetTrends() ([]string, error) {
 
 	var jsn timeline
 	s.setBearerToken(bearerToken2)
-	err = s.RequestAPI(req, &jsn)
+	_, err = s.RequestAPI(req, &jsn)
 	s.setBearerToken(bearerToken)
 	if err != nil {
 		return nil, err
