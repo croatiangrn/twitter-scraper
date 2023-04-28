@@ -22,7 +22,7 @@ type timeline struct {
 					MediaURLHttps string `json:"media_url_https"`
 					Type          string `json:"type"`
 					URL           string `json:"url"`
-				} `json:"media"`
+				} `json:"media"`r
 				URLs []struct {
 					ExpandedURL string `json:"expanded_url"`
 					URL         string `json:"url"`

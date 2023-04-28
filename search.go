@@ -3,6 +3,8 @@ package twitterscraper
 import (
 	"context"
 	"errors"
+	"log"
+	"net/http"
 	"strconv"
 )
 
@@ -36,12 +38,43 @@ func (s *Scraper) getSearchTimeline(query string, maxNbr int, cursor string) (*t
 		maxNbr = 50
 	}
 
-	req, err := s.newRequest("GET", "https://twitter.com/i/api/2/search/adaptive.json")
+	req, err := http.NewRequest("GET", "https://twitter.com/i/api/2/search/adaptive.json", nil)
 	if err != nil {
 		return nil, err
 	}
 
 	q := req.URL.Query()
+	q.Add("include_profile_interstitial_type", "1")
+	q.Add("include_blocking", "1")
+	q.Add("include_blocked_by", "1")
+	q.Add("include_followed_by", "1")
+	q.Add("include_want_retweets", "1")
+	q.Add("include_mute_edge", "1")
+	q.Add("include_can_dm", "1")
+	q.Add("include_can_media_tag", "1")
+	q.Add("include_ext_has_nft_avatar", "1")
+	q.Add("include_ext_is_blue_verified", "1")
+	q.Add("include_ext_verified_type", "1")
+	q.Add("skip_status", "1")
+	q.Add("cards_platform", "Web-12")
+	q.Add("include_cards", "1")
+	q.Add("include_ext_alt_text", "true")
+	q.Add("include_ext_limited_action_results", "false")
+	q.Add("include_quote_count", "true")
+	q.Add("include_reply_count", "1")
+	q.Add("tweet_mode", "extended")
+	q.Add("include_ext_collab_control", "true")
+	q.Add("include_ext_views", "true")
+	q.Add("include_entities", "true")
+	q.Add("include_user_entities", "true")
+	q.Add("include_ext_media_color", "true")
+	q.Add("include_ext_media_availability", "true")
+	q.Add("include_ext_sensitive_media_warning", "true")
+	q.Add("include_ext_trusted_friends_metadata", "true")
+	q.Add("send_error_codes", "true")
+	q.Add("simple_quoted_tweet", "true")
+	q.Add("include_tweet_replies", strconv.FormatBool(s.includeReplies))
+	q.Add("ext", "mediaStats,highlightedLabel,hasNftAvatar,voiceInfo,birdwatchPivot,enrichments,superFollowMetadata,unmentionInfo,editControl,collab_control,vibe")
 	q.Add("q", query)
 	q.Add("count", strconv.Itoa(maxNbr))
 	q.Add("query_source", "typed_query")
@@ -60,37 +93,7 @@ func (s *Scraper) getSearchTimeline(query string, maxNbr int, cursor string) (*t
 
 	switch s.searchMode {
 	case SearchLatest:
-		q.Add("include_profile_interstitial_type", "1")
-		q.Add("include_blocking", "1")
-		q.Add("include_blocked_by", "1")
-		q.Add("include_followed_by", "1")
-		q.Add("include_want_retweets", "1")
-		q.Add("include_mute_edge", "1")
-		q.Add("include_can_dm", "1")
-		q.Add("include_can_media_tag", "1")
-		q.Add("include_ext_has_nft_avatar", "1")
-		q.Add("include_ext_is_blue_verified", "1")
-		q.Add("include_ext_verified_type", "1")
-		q.Add("include_ext_profile_image_shape", "1")
-		q.Add("skip_status", "1")
-		q.Add("cards_platform", "Web-12")
-		q.Add("include_cards", "1")
-		q.Add("include_ext_alt_text", "true")
-		q.Add("include_ext_limited_action_results", "false")
-		q.Add("include_quote_count", "true")
-		q.Add("include_reply_count", "1")
-		q.Add("tweet_mode", "extended")
-		q.Add("include_ext_views", "true")
-		q.Add("include_entities", "true")
-		q.Add("include_user_entities", "true")
-		q.Add("include_ext_media_color", "true")
-		q.Add("include_ext_media_availability", "true")
-		q.Add("include_ext_sensitive_media_warning", "true")
-		q.Add("include_ext_trusted_friends_metadata", "true")
-		q.Add("send_error_codes", "true")
-		q.Add("simple_quoted_tweet", "true")
 		q.Add("tweet_search_mode", "live")
-		q.Add("ext", "mediaStats,highlightedLabel,hasNftAvatar,voiceInfo,birdwatchPivot,enrichments,superFollowMetadata,unmentionInfo,editControl,vibe")
 	case SearchPhotos:
 		q.Add("result_filter", "image")
 	case SearchVideos:
@@ -100,6 +103,7 @@ func (s *Scraper) getSearchTimeline(query string, maxNbr int, cursor string) (*t
 	}
 
 	req.URL.RawQuery = q.Encode()
+	log.Println(req.URL.String())
 
 	var timeline timeline
 	_, err = s.RequestAPI(req, &timeline)
