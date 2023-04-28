@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -58,9 +59,24 @@ func (s *Scraper) RequestAPI(req *http.Request, target interface{}) error {
 	}
 
 	// Print all response headers
-	for header, values := range resp.Header {
-		log.Printf("%s: %v\n", header, values)
+	allowedHeaders := map[string]struct{}{
+		"x-rate-limit-limit":     {},
+		"x-rate-limit-reset":     {},
+		"x-rate-limit-remaining": {},
 	}
+
+	log.Println("")
+	log.Println("")
+	log.Println("")
+	for header, values := range resp.Header {
+		if _, ok := allowedHeaders[strings.ToLower(header)]; ok {
+			log.Printf("%s: %v\n", header, values)
+		}
+	}
+
+	log.Println("")
+	log.Println("")
+	log.Println("")
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
