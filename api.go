@@ -2,9 +2,9 @@ package twitterscraper
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -17,6 +17,15 @@ type ResponseAPIHeaders struct {
 	XRateLimitReset     int64
 	XRateLimitLimit     int
 	XRateLimitRemaining int
+}
+
+type RequestAPIError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+func (r *RequestAPIError) Error() string {
+	return fmt.Sprintf("Code: %d; Message: %s", r.Code, r.Message)
 }
 
 // RequestAPI get JSON from frontend API and decodes it
@@ -57,12 +66,15 @@ func (s *Scraper) RequestAPI(req *http.Request, target interface{}) (*ResponseAP
 
 	// private profiles return forbidden, but also data
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusForbidden {
-		content, _ := ioutil.ReadAll(resp.Body)
-		return nil, fmt.Errorf("response status %s: %s", resp.Status, content)
-	}
+		content, _ := io.ReadAll(resp.Body)
 
-	if resp.Header.Get("X-Rate-Limit-Remaining") == "0" {
-		s.guestToken = ""
+		reqErr := RequestAPIError{}
+
+		if err := json.Unmarshal(content, &reqErr); err != nil {
+			return nil, errors.New(string(content))
+		}
+
+		return nil, &reqErr
 	}
 
 	// Print all response headers
@@ -126,7 +138,7 @@ func (s *Scraper) GetGuestToken() error {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
