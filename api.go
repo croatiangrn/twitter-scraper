@@ -158,3 +158,8 @@ func (s *Scraper) GetGuestToken() error {
 
 	return nil
 }
+
+func (s *Scraper) SetGuestTokenNil() {
+	s.guestToken = ""
+	s.guestCreatedAt = time.Time{}
+}
