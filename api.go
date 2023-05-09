@@ -44,6 +44,13 @@ func (s *Scraper) RequestAPI(req *http.Request, target interface{}) (*ResponseAP
 	if !s.IsGuestToken() || s.guestCreatedAt.Before(time.Now().Add(-time.Hour*3)) {
 		err := s.GetGuestToken()
 		if err != nil {
+			if strings.Contains(err.Error(), "This request requires a matching csrf cookie and header") {
+				return nil, &RequestAPIError{
+					Code:    353,
+					Message: "This request requires a matching csrf cookie and header.",
+				}
+			}
+
 			return nil, err
 		}
 	}
@@ -157,9 +164,4 @@ func (s *Scraper) GetGuestToken() error {
 	s.guestCreatedAt = time.Now()
 
 	return nil
-}
-
-func (s *Scraper) SetGuestTokenNil() {
-	s.guestToken = ""
-	s.guestCreatedAt = time.Time{}
 }
