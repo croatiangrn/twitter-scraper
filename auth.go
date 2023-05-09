@@ -78,7 +78,7 @@ func (s *Scraper) IsLoggedIn() bool {
 		return false
 	}
 	var verify verifyCredentials
-	err = s.RequestAPI(req, &verify)
+	_, err = s.RequestAPI(req, &verify)
 	if err != nil || verify.Errors != nil {
 		s.isLogged = false
 	} else {
