@@ -193,6 +193,10 @@ func (s *Scraper) SetProxyWithTransport(proxyAddr string, transport *http.Transp
 	return errors.New("only support http(s) or socks5 protocol")
 }
 
+func (s *Scraper) BearerToken() string {
+	return s.bearerToken
+}
+
 // Deprecated: SetProxy wrapper for default Scraper
 func SetProxy(proxy string) error {
 	return defaultScraper.SetProxy(proxy)
