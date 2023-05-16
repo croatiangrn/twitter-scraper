@@ -13,6 +13,10 @@ import (
 
 const bearerToken string = "AAAAAAAAAAAAAAAAAAAAAPYXBAAAAAAACLXUNDekMxqa8h%2F40K4moUkGsoc%3DTYfbDKbT3jJPCEVnMYqilB28NHfOPqkca3qaAxGfsyKCs0wRbw"
 
+func GetBearerToken() string {
+	return bearerToken
+}
+
 type ResponseAPIHeaders struct {
 	XRateLimitReset     int64
 	XRateLimitLimit     int
